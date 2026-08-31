@@ -1,0 +1,147 @@
+.admin-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: calc(100vh - 73px);
+}
+
+.admin-sidebar {
+  padding: 2rem;
+  border-radius: 0;
+  border-right: 1px solid var(--border-color);
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  background-color: var(--bg-card);
+}
+
+.admin-title {
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.admin-nav-link:hover, .admin-nav-link.active {
+  background-color: var(--bg-input);
+  color: var(--primary-color);
+}
+
+.admin-main {
+  padding: 3rem;
+  background-color: var(--bg-color);
+}
+
+/* Dashboard Stats */
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-danger-light { background: #fee2e2; color: var(--danger); }
+
+.stat-details h3 {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Admin Tables */
+.recent-orders {
+  padding: 1.5rem;
+}
+
+.recent-orders h3 {
+  margin-bottom: 1.5rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  background-color: var(--bg-input);
+}
+
+.admin-table tbody tr:hover {
+  background-color: var(--bg-input);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  background: none;
+  color: var(--text-muted);
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon:hover {
+  background-color: rgba(0,0,0,0.05);
+  color: var(--primary-color);
+}
+
+.btn-icon.delete:hover {
+  color: var(--danger);
+}
+
+@media (max-width: 992px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+}
