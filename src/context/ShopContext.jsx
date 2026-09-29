@@ -1,61 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { initialProducts, categories as initialCategories, sellers } from '../data/mockData';
 
 const ShopContext = createContext();
 
-const initialProducts = [
-  {
-    id: '1',
-    name: 'Wireless Noise-Cancelling Headphones',
-    description: 'Premium over-ear headphones with active noise cancellation and 30-hour battery life.',
-    price: 299.99,
-    category: 'Electronics',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800',
-    stock: 15,
-    rating: 4.8,
-    reviews: [
-      { id: 'r1', userId: 'user1', userName: 'Alice', rating: 5, text: 'Amazing sound quality!' },
-      { id: 'r2', userId: 'user2', userName: 'Bob', rating: 4, text: 'Very comfortable, but a bit pricey.' }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Minimalist Mechanical Keyboard',
-    description: 'Tenkeyless mechanical keyboard with tactile switches and RGB backlighting.',
-    price: 129.50,
-    category: 'Computers',
-    image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=800',
-    stock: 8,
-    rating: 4.5,
-    reviews: []
-  },
-  {
-    id: '3',
-    name: 'Smart Fitness Watch',
-    description: 'Track your health, sleep, and workouts with this sleek waterproof smartwatch.',
-    price: 199.00,
-    category: 'Wearables',
-    image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&q=80&w=800',
-    stock: 25,
-    rating: 4.2,
-    reviews: []
-  },
-  {
-    id: '4',
-    name: 'Ergonomic Office Chair',
-    description: 'Comfortable mesh chair with lumbar support and adjustable armrests.',
-    price: 249.99,
-    category: 'Furniture',
-    image: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&q=80&w=800',
-    stock: 5,
-    rating: 4.7,
-    reviews: []
-  }
-];
-
 export function ShopProvider({ children }) {
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('products');
-    return saved ? JSON.parse(saved) : initialProducts;
+    localStorage.setItem('products', JSON.stringify(initialProducts));
+    return initialProducts;
   });
 
   const [orders, setOrders] = useState(() => {
@@ -63,7 +14,8 @@ export function ShopProvider({ children }) {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [categories, setCategories] = useState(['All', 'Electronics', 'Computers', 'Wearables', 'Furniture']);
+  const [categories, setCategories] = useState(initialCategories);
+
 
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));

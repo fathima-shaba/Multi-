@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { CreditCard, Truck, CheckCircle } from 'lucide-react';
+import { CheckCircle, ShieldCheck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useShop } from '../context/ShopContext';
@@ -12,15 +12,16 @@ export default function Checkout() {
   const { placeOrder } = useShop();
   const navigate = useNavigate();
 
+  const [activeStep, setActiveStep] = useState(2); // 1: Login, 2: Address, 3: Summary, 4: Payment
+  
   const [formData, setFormData] = useState({
-    fullName: user ? user.name : '',
-    email: user ? user.email : '',
+    name: user ? user.name : '',
+    phone: '9876543210',
+    pincode: '',
+    locality: '',
     address: '',
     city: '',
-    zipCode: '',
-    cardNumber: '',
-    expiry: '',
-    cvv: ''
+    state: ''
   });
 
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -34,25 +35,25 @@ export default function Checkout() {
     return <Navigate to="/cart" />;
   }
 
+  // Price calculations
+  const totalMRP = cartItems.reduce((total, item) => total + ((item.originalPrice || item.price) * item.quantity), 0);
+  const totalDiscount = cartItems.reduce((total, item) => total + (((item.originalPrice || item.price) - item.price) * item.quantity), 0);
+  const finalPrice = getCartTotal();
+  const deliveryCharge = finalPrice > 500 ? 0 : 40;
+  const totalAmount = finalPrice + deliveryCharge;
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleAddressSubmit = (e) => {
     e.preventDefault();
-    
-    // Calculate total including shipping
-    const subtotal = getCartTotal();
-    const shipping = subtotal > 100 ? 0 : 10;
-    const total = subtotal + shipping;
+    setActiveStep(3);
+  };
 
-    const shippingDetails = {
-      address: formData.address,
-      city: formData.city,
-      zipCode: formData.zipCode
-    };
-
-    const newOrderId = placeOrder(user.id, cartItems, total, shippingDetails);
+  const handlePaymentSubmit = (e) => {
+    e.preventDefault();
+    const newOrderId = placeOrder(user.id, cartItems, totalAmount, formData);
     setOrderId(newOrderId);
     setOrderPlaced(true);
     clearCart();
@@ -63,10 +64,10 @@ export default function Checkout() {
       <div className="checkout-page container success-view">
         <div className="success-card card">
           <CheckCircle size={64} className="success-icon" />
-          <h2>Order Placed Successfully!</h2>
-          <p>Thank you for your purchase. Your order <strong>#{orderId}</strong> is currently being processed.</p>
+          <h2>Order placed for ₹{totalAmount.toLocaleString('en-IN')}!</h2>
+          <p>Your order <strong>#{orderId}</strong> is being processed.</p>
           <button className="btn btn-primary" onClick={() => navigate('/profile')}>
-            View Order History
+            Track Order
           </button>
         </div>
       </div>
@@ -75,84 +76,147 @@ export default function Checkout() {
 
   return (
     <div className="checkout-page container">
-      <h1 className="page-title">Checkout</h1>
-
       <div className="checkout-layout">
-        <div className="checkout-form-container">
-          <form id="checkout-form" onSubmit={handleSubmit}>
-            <div className="checkout-section card">
-              <h3 className="flex items-center gap-2"><Truck size={20} /> Shipping Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="input-group">
-                  <label>Full Name</label>
-                  <input type="text" name="fullName" className="input" value={formData.fullName} onChange={handleChange} required />
-                </div>
-                <div className="input-group">
-                  <label>Email Address</label>
-                  <input type="email" name="email" className="input" value={formData.email} onChange={handleChange} required />
-                </div>
-                <div className="input-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Address</label>
-                  <input type="text" name="address" className="input" value={formData.address} onChange={handleChange} required />
-                </div>
-                <div className="input-group">
-                  <label>City</label>
-                  <input type="text" name="city" className="input" value={formData.city} onChange={handleChange} required />
-                </div>
-                <div className="input-group">
-                  <label>ZIP Code</label>
-                  <input type="text" name="zipCode" className="input" value={formData.zipCode} onChange={handleChange} required />
-                </div>
+        
+        <div className="checkout-accordion">
+          {/* STEP 1: LOGIN */}
+          <div className="accordion-step card">
+            <div className="step-header">
+              <div className="step-number">1</div>
+              <div className="step-title-block">
+                <span className="step-title">LOGIN</span>
+                {activeStep > 1 && <span className="step-summary"> {user.name} <span>+91 {formData.phone}</span></span>}
               </div>
+              {activeStep > 1 && <button className="btn-change">CHANGE</button>}
             </div>
+            {activeStep === 1 && (
+              <div className="step-content">
+                <p>Logged in securely.</p>
+                <button className="btn btn-warning action-btn" onClick={() => setActiveStep(2)}>CONTINUE CHECKOUT</button>
+              </div>
+            )}
+          </div>
 
-            <div className="checkout-section card">
-              <h3 className="flex items-center gap-2"><CreditCard size={20} /> Payment Details (Mock)</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="input-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Card Number</label>
-                  <input type="text" name="cardNumber" placeholder="0000 0000 0000 0000" className="input" value={formData.cardNumber} onChange={handleChange} required />
+          {/* STEP 2: DELIVERY ADDRESS */}
+          <div className="accordion-step card">
+            <div className={`step-header ${activeStep === 2 ? 'active' : ''}`}>
+              <div className="step-number">2</div>
+              <div className="step-title-block">
+                <span className="step-title">DELIVERY ADDRESS</span>
+                {activeStep > 2 && <span className="step-summary">{formData.name}, {formData.address}, {formData.city} - {formData.pincode}</span>}
+              </div>
+              {activeStep > 2 && <button className="btn-change" onClick={() => setActiveStep(2)}>CHANGE</button>}
+            </div>
+            {activeStep === 2 && (
+              <div className="step-content">
+                <form onSubmit={handleAddressSubmit} className="address-form">
+                  <div className="grid grid-cols-2 gap-4">
+                    <input type="text" name="name" placeholder="Name" className="input" value={formData.name} onChange={handleChange} required />
+                    <input type="text" name="phone" placeholder="10-digit mobile number" className="input" value={formData.phone} onChange={handleChange} required />
+                    <input type="text" name="pincode" placeholder="Pincode" className="input" value={formData.pincode} onChange={handleChange} required />
+                    <input type="text" name="locality" placeholder="Locality" className="input" value={formData.locality} onChange={handleChange} />
+                    <textarea name="address" placeholder="Address (Area and Street)" className="input col-span-2" rows="3" value={formData.address} onChange={handleChange} required></textarea>
+                    <input type="text" name="city" placeholder="City/District/Town" className="input" value={formData.city} onChange={handleChange} required />
+                    <input type="text" name="state" placeholder="State" className="input" value={formData.state} onChange={handleChange} required />
+                  </div>
+                  <div className="form-actions mt-4">
+                    <button type="submit" className="btn btn-warning action-btn lg">DELIVER HERE</button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+
+          {/* STEP 3: ORDER SUMMARY */}
+          <div className="accordion-step card">
+            <div className={`step-header ${activeStep === 3 ? 'active' : ''}`}>
+              <div className="step-number">3</div>
+              <div className="step-title-block">
+                <span className="step-title">ORDER SUMMARY</span>
+                {activeStep > 3 && <span className="step-summary">{cartItems.length} Items</span>}
+              </div>
+              {activeStep > 3 && <button className="btn-change" onClick={() => setActiveStep(3)}>CHANGE</button>}
+            </div>
+            {activeStep === 3 && (
+              <div className="step-content no-padding">
+                <div className="checkout-items-list">
+                  {cartItems.map(item => (
+                    <div key={item.id} className="checkout-item-row">
+                      <img src={item.image} alt={item.name} className="checkout-item-img" />
+                      <div className="checkout-item-details">
+                        <h4>{item.name}</h4>
+                        <p className="seller">Seller: {item.sellerName || 'MultiStore'}</p>
+                        <div className="price-line">
+                          {item.originalPrice > item.price && <span className="mrp">₹{item.originalPrice.toLocaleString()}</span>}
+                          <span className="price">₹{item.price.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="input-group">
-                  <label>Expiry Date</label>
-                  <input type="text" name="expiry" placeholder="MM/YY" className="input" value={formData.expiry} onChange={handleChange} required />
-                </div>
-                <div className="input-group">
-                  <label>CVV</label>
-                  <input type="text" name="cvv" placeholder="123" className="input" value={formData.cvv} onChange={handleChange} required />
+                <div className="step-footer">
+                  <p>Order confirmation email will be sent to <strong>{user.email}</strong></p>
+                  <button className="btn btn-warning action-btn" onClick={() => setActiveStep(4)}>CONTINUE</button>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* STEP 4: PAYMENT OPTIONS */}
+          <div className="accordion-step card">
+            <div className={`step-header ${activeStep === 4 ? 'active' : ''}`}>
+              <div className="step-number">4</div>
+              <div className="step-title-block">
+                <span className="step-title">PAYMENT OPTIONS</span>
+              </div>
             </div>
-          </form>
+            {activeStep === 4 && (
+              <div className="step-content">
+                <form onSubmit={handlePaymentSubmit}>
+                  <div className="payment-options">
+                    <label className="payment-radio">
+                      <input type="radio" name="paymentMode" value="upi" /> UPI
+                    </label>
+                    <label className="payment-radio">
+                      <input type="radio" name="paymentMode" value="card" defaultChecked /> Credit / Debit / ATM Card
+                    </label>
+                    <label className="payment-radio">
+                      <input type="radio" name="paymentMode" value="cod" /> Cash on Delivery
+                    </label>
+                  </div>
+                  <button type="submit" className="btn btn-warning action-btn lg w-full mt-4">
+                    PAY ₹{totalAmount.toLocaleString('en-IN')}
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+
         </div>
 
-        <div className="checkout-summary card">
-          <h3>Order Summary</h3>
-          <div className="checkout-items">
-            {cartItems.map(item => (
-              <div key={item.id} className="checkout-item">
-                <span>{item.name} x {item.quantity}</span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
+        {/* Right Sidebar - Price Details */}
+        <div className="checkout-summary-col">
+          <div className="price-details-card card">
+            <h3 className="price-header">PRICE DETAILS</h3>
+            <div className="price-row">
+              <span>Price ({cartItems.length} items)</span>
+              <span>₹{totalMRP.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="price-row">
+              <span>Delivery Charges</span>
+              <span>{deliveryCharge === 0 ? <span className="success-text">Free</span> : `₹${deliveryCharge}`}</span>
+            </div>
+            
+            <div className="total-amount-row">
+              <span>Amount Payable</span>
+              <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+            </div>
           </div>
-          <div className="summary-divider"></div>
-          <div className="summary-row">
-            <span>Subtotal</span>
-            <span>${getCartTotal().toFixed(2)}</span>
+          
+          <div className="safe-payment">
+            <ShieldCheck size={24} className="shield-icon" />
+            <p>Safe and Secure Payments. Easy returns. 100% Authentic products.</p>
           </div>
-          <div className="summary-row">
-            <span>Shipping</span>
-            <span>{getCartTotal() > 100 ? 'Free' : '$10.00'}</span>
-          </div>
-          <div className="summary-divider"></div>
-          <div className="summary-row total-row">
-            <span>Total</span>
-            <span>${(getCartTotal() + (getCartTotal() > 100 ? 0 : 10)).toFixed(2)}</span>
-          </div>
-          <button form="checkout-form" type="submit" className="btn btn-primary btn-block btn-pay">
-            Place Order
-          </button>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './ProductCard.css';
 
@@ -8,38 +8,63 @@ export default function ProductCard({ product }) {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    e.stopPropagation(); // prevent navigation
     addToCart(product);
+  };
+
+  const handleWishlist = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Wishlist functionality here
   };
 
   return (
     <Link to={`/product/${product.id}`} className="product-card card">
       <div className="product-image-wrapper">
         <img src={product.image} alt={product.name} className="product-image" />
-        {product.stock <= 5 && product.stock > 0 && (
-          <span className="badge badge-warning stock-badge">Low Stock</span>
-        )}
-        {product.stock === 0 && (
-          <span className="badge badge-danger stock-badge">Out of Stock</span>
+        <button className="wishlist-btn" onClick={handleWishlist}>
+          <Heart size={18} />
+        </button>
+        {product.discount > 0 && (
+          <span className="discount-badge">{product.discount}% OFF</span>
         )}
       </div>
       <div className="product-info">
-        <div className="product-meta">
-          <span className="product-category">{product.category}</span>
-          <div className="product-rating">
-            <Star size={14} className="star-icon" fill="currentColor" />
-            <span>{product.rating > 0 ? product.rating.toFixed(1) : 'New'}</span>
-          </div>
-        </div>
-        <h3 className="product-name">{product.name}</h3>
-        <p className="product-price">${product.price.toFixed(2)}</p>
+        <div className="product-brand">{product.brand || 'Generic'}</div>
+        <h3 className="product-name" title={product.name}>{product.name}</h3>
         
+        <div className="product-rating-reviews">
+          <div className="rating-badge">
+            {product.rating > 0 ? Number(product.rating).toFixed(1) : 'New'} <Star size={12} fill="currentColor" />
+          </div>
+          <span className="review-count">({product.reviewCount ? product.reviewCount.toLocaleString('en-IN') : 0})</span>
+        </div>
+
+        <div className="product-price-section">
+          <span className="product-price">₹{product.price.toLocaleString('en-IN')}</span>
+          {product.originalPrice > product.price && (
+            <>
+              <span className="product-mrp">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+              <span className="product-discount">{product.discount}% off</span>
+            </>
+          )}
+        </div>
+        
+        {product.deliveryInfo && (
+          <div className="product-delivery">
+            <span className="free-delivery">Free delivery</span>
+          </div>
+        )}
+      </div>
+      
+      {/* Quick Add Overlay shown on Hover */}
+      <div className="product-actions-overlay">
         <button 
           className="btn btn-primary btn-add-cart" 
           onClick={handleAddToCart}
           disabled={product.stock === 0}
         >
-          <ShoppingCart size={18} />
-          {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+          {product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
         </button>
       </div>
     </Link>
