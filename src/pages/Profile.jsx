@@ -1,18 +1,19 @@
-import { Navigate } from 'react-router-dom';
-import { User, MapPin, Package, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { formatPaise, useCommerceQuery } from '../api/commerce';
+import CatalogState from '../components/CatalogState';
+import { Link } from 'react-router-dom';
+import { User, Package, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useShop } from '../context/ShopContext';
+import ProfileSettings from './account/ProfileSettings';
+import ShippingAddresses from './account/ShippingAddresses';
+import MyReviews from './account/MyReviews';
 import './Profile.css';
 
 export default function Profile() {
   const { user } = useAuth();
-  const { orders } = useShop();
-
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
-  const userOrders = orders.filter(o => o.userId === user.id);
+  const [offset, setOffset] = useState(0);
+  const orders = useCommerceQuery('/orders?offset=' + offset);
+  const userOrders = orders.data?.orders || [];
 
   return (
     <div className="profile-page container">
@@ -23,6 +24,7 @@ export default function Profile() {
         <div className="profile-info">
           <h2>{user.name}</h2>
           <p>{user.email}</p>
+          {user.phone && <p>{user.phone}</p>}
           <span className="badge badge-success" style={{ marginTop: '0.5rem', display: 'inline-block' }}>
             {user.role === 'admin' ? 'Administrator' : 'Customer'}
           </span>
@@ -35,16 +37,16 @@ export default function Profile() {
             <Package size={20} /> Order History
           </h3>
 
-          {userOrders.length > 0 ? (
+          {(orders.loading || orders.error) ? <CatalogState loading={orders.loading} error={orders.error} retry={orders.retry} /> : userOrders.length > 0 ? (
             <div className="orders-list">
               {userOrders.map(order => (
                 <div key={order.id} className="order-card">
                   <div className="order-header">
                     <div>
-                      <span className="order-id">{order.id}</span>
+                      <Link className="order-id" to={'/orders/' + encodeURIComponent(order.id)}>{order.orderNumber}</Link>
                       <span className="order-date">
                         <Clock size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                        {new Date(order.date).toLocaleDateString()}
+                        {new Date(order.createdAt).toLocaleDateString('en-IN')}
                       </span>
                     </div>
                     <span className={`badge ${order.status === 'Delivered' ? 'badge-success' : order.status === 'Cancelled' ? 'badge-danger' : 'badge-warning'}`}>
@@ -53,21 +55,16 @@ export default function Profile() {
                   </div>
                   
                   <div className="order-items">
-                    {order.items.map((item, index) => (
-                      <div key={index} className="order-item">
-                        <span>{item.quantity}x {item.name}</span>
-                        <span>${(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                    ))}
+                    {order.items.map(item => <div className="order-item" key={item.productId}>
+                      <span>{item.quantity}x {item.name}</span>
+                      <span>{formatPaise(item.pricePaise * item.quantity)}</span>
+                    </div>)}
                   </div>
-
                   <div className="order-footer">
-                    <div className="order-shipping">
-                      <MapPin size={14} /> 
-                      {order.shippingDetails.address}, {order.shippingDetails.city} {order.shippingDetails.zipCode}
-                    </div>
+                    <Link to={'/orders/' + encodeURIComponent(order.id)}>View Receipt &amp; Tracking</Link>
+                    <span>Payment: {order.paymentStatus}</span>
                     <div className="order-total">
-                      Total: <strong>${order.total.toFixed(2)}</strong>
+                      Total: <strong>{formatPaise(order.totalPaise)}</strong>
                     </div>
                   </div>
                 </div>
@@ -79,6 +76,13 @@ export default function Profile() {
             </div>
           )}
         </div>
+        {orders.data && (offset > 0 || orders.data.nextOffset !== null) && <div className="account-actions">
+          <button className="btn btn-outline" onClick={() => setOffset(Math.max(0, offset - 25))} disabled={!offset}>Previous Orders</button>
+          <button className="btn btn-outline" onClick={() => setOffset(orders.data.nextOffset)} disabled={orders.data.nextOffset === null}>More Orders</button>
+        </div>}
+        <ProfileSettings key={user.id} user={user} />
+        <MyReviews key={'reviews-'+user.id} />
+        <ShippingAddresses key={'addresses-' + user.id} />
       </div>
     </div>
   );

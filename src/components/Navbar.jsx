@@ -1,19 +1,36 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Package, ShieldCheck, Search, Store, Heart, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, Package, Search, Heart, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useShop } from '../context/ShopContext';
 import './Navbar.css';
 
 export default function Navbar() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, loading, logout, isAdmin } = useAuth();
   const { getCartCount } = useCart();
   const { categories } = useShop();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const [logoutError, setLogoutError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    setLogoutError('');
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      setLogoutError(error.message);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const q = new FormData(event.currentTarget).get('q').trim();
+    navigate(q ? '/shop?' + new URLSearchParams({ q }) : '/shop');
   };
 
   return (
@@ -26,15 +43,15 @@ export default function Navbar() {
             <span>MultiStore</span>
           </Link>
           
-          <div className="search-container">
-            <Search size={20} className="search-icon-left" />
-            <input type="text" placeholder="Search for products, brands and more" className="search-input" />
-          </div>
+          <form className="search-container" role="search" onSubmit={handleSearch}>
+            <button className="search-icon-left" type="submit" aria-label="Submit product search"><Search size={20} /></button>
+            <input type="text" name="q" aria-label="Search products" maxLength={120} placeholder="Search for products, brands and more" className="search-input" />
+          </form>
           
           <div className="nav-actions">
-            {user ? (
+            {loading ? <span className="nav-action-btn" role="status"><User size={20} /></span> : user ? (
               <div className="dropdown">
-                <button className="nav-action-btn">
+                <button className="nav-action-btn" aria-label="Account menu">
                   <User size={20} />
                   <span>{user.name ? user.name.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'User')}</span>
                   <ChevronDown size={14} />
@@ -43,7 +60,7 @@ export default function Navbar() {
                   <Link to="/profile" className="dropdown-item">My Profile</Link>
                   <Link to="/orders" className="dropdown-item">Orders</Link>
                   {isAdmin && <Link to="/admin" className="dropdown-item">Admin Dashboard</Link>}
-                  <button onClick={handleLogout} className="dropdown-item">Logout</button>
+                  <button onClick={handleLogout} className="dropdown-item" disabled={loggingOut}>{loggingOut ? 'Signing out…' : 'Logout'}</button>
                 </div>
               </div>
             ) : (
@@ -55,17 +72,12 @@ export default function Navbar() {
               </div>
             )}
 
-            <Link to="/seller-dashboard" className="nav-action-btn">
-              <Store size={20} />
-              <span>Become a Seller</span>
-            </Link>
-
-            <Link to="/wishlist" className="nav-action-btn">
+            <Link to="/wishlist" className="nav-action-btn" aria-label="Wishlist">
               <Heart size={20} />
               <span>Wishlist</span>
             </Link>
 
-            <Link to="/cart" className="nav-action-btn cart-link">
+            <Link to="/cart" className="nav-action-btn cart-link" aria-label="Cart">
               <ShoppingCart size={20} />
               <span>Cart</span>
               {getCartCount() > 0 && <span className="cart-badge">{getCartCount()}</span>}
@@ -73,6 +85,8 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {logoutError && <p className="container" role="alert">{logoutError}</p>}
 
       {/* Second Navigation */}
       <div className="category-nav">
@@ -84,7 +98,7 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="dropdown">
-            <span className="cat-nav-link">More <ChevronDown size={14}/></span>
+            <button type="button" className="cat-nav-link more-categories">More <ChevronDown size={14}/></button>
             <div className="dropdown-menu">
               {categories.slice(11).map((cat, idx) => (
                 <Link to={`/shop?category=${encodeURIComponent(cat)}`} key={idx} className="dropdown-item">

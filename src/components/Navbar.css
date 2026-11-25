@@ -245,3 +245,20 @@
     gap: 1rem;
   }
 }
+
+.dropdown:focus-within .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(5px);
+}
+.more-categories, button.search-icon-left {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+button.search-icon-left { pointer-events: auto; }
+.category-nav .dropdown-menu { left: auto; right: 0; transform: translateY(5px); }
+@media (max-width: 1200px) {
+  .nav-actions .cart-badge { display: inline; }
+  .category-nav .dropdown-menu:focus-within { visibility: visible; }
+}

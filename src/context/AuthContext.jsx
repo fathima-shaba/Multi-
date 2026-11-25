@@ -1,44 +1,59 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+﻿import { createContext, useContext, useEffect, useState } from 'react';
+import { accountRequest } from '../api/account';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('user');
-    }
-  }, [user]);
+    // Remove the old mock identity without reading or migrating it.
+    try { localStorage.removeItem('user'); } catch { /* Browser storage may be disabled. */ }
+    const endSession = () => setUser(null);
+    window.addEventListener('multistore:session-ended', endSession);
+    return () => window.removeEventListener('multistore:session-ended', endSession);
+  }, []);
 
-  const login = (email, password) => {
-    // Mock login logic
-    if (email === 'admin@admin.com' && password === 'admin') {
-      setUser({ id: '1', name: 'Admin', email, role: 'admin' });
-      return true;
-    } else if (email && password) {
-      setUser({ id: Date.now().toString(), name: email.split('@')[0], email, role: 'user' });
-      return true;
-    }
-    return false;
-  };
+  useEffect(() => {
+    const controller = new AbortController();
+    accountRequest('/auth/me', { signal: controller.signal }).then(result => {
+      if (!controller.signal.aborted) setUser(result.user);
+    }).catch(error => {
+      if (!controller.signal.aborted && error.status !== 401) setSessionError(error.message);
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [attempt]);
 
-  const register = (name, email, password) => {
-    setUser({ id: Date.now().toString(), name, email, role: 'user' });
-    return true;
-  };
+  async function authenticate(path, body) {
+    const { user: signedIn } = await accountRequest(path, { method: 'POST', body });
+    setUser(signedIn);
+    setSessionError('');
+    setLoading(false);
+  }
 
-  const logout = () => {
+  async function logout() {
+    await accountRequest('/auth/logout', { method: 'POST' });
     setUser(null);
-  };
+  }
+
+  function retrySession() {
+    setSessionError('');
+    setLoading(true);
+    setAttempt(previous => previous + 1);
+  }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{
+      user, loading, sessionError, retrySession, logout, updateUser: setUser,
+      login: fields => authenticate('/auth/login', fields),
+      register: fields => authenticate('/auth/register', fields),
+      isAdmin: user?.role === 'admin',
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -66,6 +66,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: .5rem;
 }
 
 .reviewer-name {
@@ -90,6 +92,43 @@
   color: var(--text-muted);
   line-height: 1.6;
   margin-bottom: 0.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#customer-reviews {
+  scroll-margin-top: 8rem;
+}
+
+.review-summary {
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.review-distribution {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .5rem;
+}
+
+.review-distribution progress {
+  width: 100%;
+  accent-color: var(--primary-color);
+}
+
+.review-sort {
+  display: block;
+  max-width: 14rem;
+  margin: 1rem 0;
+}
+
+.review-notice,
+.verified-purchase {
+  color: #16713b;
+  margin: .5rem 0;
+  font-weight: 600;
 }
 
 .review-date {

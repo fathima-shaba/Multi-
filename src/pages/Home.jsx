@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Clock, ShieldCheck, Truck, RotateCcw, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShieldCheck, Truck, RotateCcw, Award } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import ProductCard from '../components/ProductCard';
+import CatalogState from '../components/CatalogState';
 import './Home.css';
 
 export default function Home() {
-  const { products, categories } = useShop();
+  const { products, categories, catalogLoading, catalogError, retryCatalog } = useShop();
   const [currentBanner, setCurrentBanner] = useState(0);
 
   const banners = [
@@ -29,10 +30,10 @@ export default function Home() {
   const homeEssentials = products.filter(p => p.category === 'Home & Furniture' || p.category === 'Kitchen' || p.category === 'Appliances').slice(0, 6);
   const beautyPicks = products.filter(p => p.category === 'Beauty').slice(0, 6);
   const under999 = products.filter(p => p.price < 999).slice(0, 6);
-  const newArrivals = products.slice(products.length - 6).reverse();
 
   return (
     <div className="home-page">
+      <CatalogState loading={catalogLoading} error={catalogError} retry={retryCatalog} />
       {/* Categories Showcase */}
       <section className="categories-showcase">
         <div className="container">
@@ -40,7 +41,7 @@ export default function Home() {
             {categories.slice(0, 10).map((cat, index) => (
               <Link to={`/shop?category=${encodeURIComponent(cat)}`} key={index} className="category-item">
                 <div className="category-icon-wrapper">
-                  <img src={`https://source.unsplash.com/random/120x120?${cat.replace(' ', ',')}&sig=${index}`} alt={cat} />
+                  <img src="/favicon.svg" alt="" loading="lazy" />
                 </div>
                 <span className="cat-name">{cat}</span>
               </Link>
@@ -55,13 +56,13 @@ export default function Home() {
           <div className="banner-container">
             <div className="banner-slider" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
               {banners.map((img, idx) => (
-                <img key={idx} src={img} alt={`Premium Offer Banner ${idx + 1}`} className="main-banner" />
+                <img key={idx} src={img} alt={`MultiStore catalog banner ${idx + 1}`} className="main-banner" />
               ))}
             </div>
-            <button className="banner-btn prev" onClick={() => setCurrentBanner((c) => (c - 1 + banners.length) % banners.length)}>
+            <button className="banner-btn prev" aria-label="Previous banner" onClick={() => setCurrentBanner((c) => (c - 1 + banners.length) % banners.length)}>
               <ChevronLeft size={24} />
             </button>
-            <button className="banner-btn next" onClick={() => setCurrentBanner((c) => (c + 1) % banners.length)}>
+            <button className="banner-btn next" aria-label="Next banner" onClick={() => setCurrentBanner((c) => (c + 1) % banners.length)}>
               <ChevronRight size={24} />
             </button>
           </div>
@@ -76,35 +77,35 @@ export default function Home() {
               <ShieldCheck size={28} className="trust-icon" />
               <div className="trust-text">
                 <h4>Secure Payments</h4>
-                <p>100% protected transactions</p>
+                <p>Test payment verification</p>
               </div>
             </div>
             <div className="trust-item">
               <RotateCcw size={28} className="trust-icon" />
               <div className="trust-text">
-                <h4>Easy Returns</h4>
-                <p>7-day hassle-free return</p>
+                <h4>Order Tracking</h4>
+                <p>View order updates</p>
               </div>
             </div>
             <div className="trust-item">
               <Truck size={28} className="trust-icon" />
               <div className="trust-text">
-                <h4>Fast Delivery</h4>
-                <p>Delivery across India</p>
+                <h4>Demo Checkout</h4>
+                <p>Simulated Cash on Delivery</p>
               </div>
             </div>
             <div className="trust-item">
               <Award size={28} className="trust-icon" />
               <div className="trust-text">
-                <h4>Genuine Products</h4>
-                <p>Sourced from verified sellers</p>
+                <h4>Product Reviews</h4>
+                <p>From verified purchases</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Deals of the Day */}
+      {/* Selected Deals */}
       {dealsOfTheDay.length > 0 && (
         <section className="featured-section">
           <div className="container">
@@ -112,10 +113,7 @@ export default function Home() {
               <div className="section-header-row">
                 <div className="header-title-timer">
                   <h2 className="section-title">Deals of the Day</h2>
-                  <div className="countdown-timer">
-                    <Clock size={16} />
-                    <span>03 : 42 : 18 Left</span>
-                  </div>
+                  
                 </div>
                 <Link to="/shop" className="btn btn-primary view-all-btn">View All</Link>
               </div>
@@ -180,7 +178,7 @@ export default function Home() {
             <div className="section-card">
               <div className="section-header-row">
                 <h2 className="section-title">Home Essentials</h2>
-                <Link to="/shop?category=Home & Furniture" className="btn btn-primary view-all-btn">View All</Link>
+                <Link to={'/shop?category=' + encodeURIComponent('Home & Furniture')} className="btn btn-primary view-all-btn">View All</Link>
               </div>
               <div className="product-slider">
                 {homeEssentials.map(product => (

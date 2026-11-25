@@ -211,3 +211,12 @@
     margin-top: 0.5rem;
   }
 }
+
+.product-card-link { color: inherit; }
+.product-card-link::after { position: absolute; inset: 0; content: ''; }
+.wishlist-btn { z-index: 1; }
+.product-card:focus-within .wishlist-btn,
+.product-card:focus-within .product-actions-overlay { opacity: 1; transform: translateY(0); }
+.product-actions-overlay { pointer-events: none; }
+.product-card:is(:hover, :focus-within) .product-actions-overlay { pointer-events: auto; }
+@media (max-width: 768px) { .product-actions-overlay { pointer-events: auto; } }

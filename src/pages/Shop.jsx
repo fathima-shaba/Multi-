@@ -1,15 +1,38 @@
-import { useState, useMemo } from 'react';
+import { formatINR } from '../utils/money';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { ChevronDown, Star } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import ProductCard from '../components/ProductCard';
+import CatalogState from '../components/CatalogState';
+import { loadProducts } from '../api/catalog';
 import './Shop.css';
 
 export default function Shop() {
-  const { products, categories } = useShop();
+  const { products, categories, categoryDetails, catalogAttempt, catalogLoading, catalogError, retryCatalog } = useShop();
   const [searchParams, setSearchParams] = useSearchParams();
   
   const categoryParam = searchParams.get('category') || 'All';
+  const keyword = searchParams.get('q')?.trim() || '';
+  const categoryFilter = categoryParam === 'All' ? '' : categoryParam;
+  const categoryInfo = categoryDetails.find(category => category.id === categoryFilter || category.name === categoryFilter);
+  const hasQuery = Boolean(keyword || categoryFilter);
+  const queryKey = JSON.stringify([keyword, categoryFilter, catalogAttempt]);
+  const [queryResult, setQueryResult] = useState(null);
+  const [queryAttempt, setQueryAttempt] = useState(0);
+  const currentQuery = queryResult?.key === queryKey && queryResult.attempt === queryAttempt ? queryResult : null;
+  useEffect(() => {
+    if (!hasQuery) return;
+    const controller = new AbortController();
+    loadProducts({ q: keyword, category: categoryFilter }, controller.signal).then(items => {
+      if (!controller.signal.aborted) {
+        setQueryResult({ key: queryKey, attempt: queryAttempt, items });
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) setQueryResult({ key: queryKey, attempt: queryAttempt, error: true });
+    });
+    return () => controller.abort();
+  }, [hasQuery, keyword, categoryFilter, queryKey, queryAttempt]);
   const [sortBy, setSortBy] = useState('Popularity');
   
   // Advanced Filter States
@@ -22,9 +45,7 @@ export default function Shop() {
   const filteredProducts = useMemo(() => {
     let result = products;
 
-    if (categoryParam !== 'All') {
-      result = result.filter(p => p.category === categoryParam);
-    }
+    if (hasQuery) result = currentQuery?.items || [];
 
     // Apply Filters
     result = result.filter(p => p.price >= minPrice && p.price <= maxPrice);
@@ -44,16 +65,16 @@ export default function Shop() {
         result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         break;
       default: // Popularity / Relevance
-        result.sort((a, b) => (b.reviews?.length || 0) - (a.reviews?.length || 0));
+        result.sort((a,b) => (b.reviewCount || 0) - (a.reviewCount || 0));
         break;
     }
 
     return result;
-  }, [products, categoryParam, sortBy, minPrice, maxPrice, minRating, minDiscount, selectedBrands]);
+  }, [products, hasQuery, currentQuery, sortBy, minPrice, maxPrice, minRating, minDiscount, selectedBrands]);
 
   // Extract unique brands for the current category
   const availableBrands = useMemo(() => {
-    const catProducts = categoryParam === 'All' ? products : products.filter(p => p.category === categoryParam);
+    const catProducts = categoryParam === 'All' ? products : products.filter(p => p.category === categoryParam || p.categoryId === categoryParam);
     const brands = new Set(catProducts.map(p => p.brand));
     return Array.from(brands).slice(0, 5); // limit to 5 for sidebar
   }, [products, categoryParam]);
@@ -74,6 +95,18 @@ export default function Shop() {
     );
   };
 
+  if (catalogLoading || catalogError) {
+    return <CatalogState loading={catalogLoading} error={catalogError} retry={retryCatalog} />;
+  }
+
+  if (hasQuery && (!currentQuery || currentQuery.error)) {
+    return <CatalogState
+      loading={!currentQuery}
+      error={currentQuery?.error ? 'Could not load these products. Please try again.' : ''}
+      retry={() => setQueryAttempt(attempt => attempt + 1)}
+    />;
+  }
+
   return (
     <div className="shop-page container">
       
@@ -86,8 +119,8 @@ export default function Shop() {
       {/* Category Header */}
       {categoryParam !== 'All' && (
         <div className="category-header">
-          <h1>{categoryParam}</h1>
-          <p className="category-desc">Explore the latest {categoryParam.toLowerCase()} and discover top brands.</p>
+          <h1>{categoryInfo?.name || categoryParam}</h1>
+          <p className="category-desc">{categoryInfo?.description || 'Explore products in this category.'}</p>
           <div className="category-chips">
             {['All', 'Trending', 'New Arrivals', 'Bestsellers', 'Under ₹999'].map(chip => (
               <span key={chip} className="chip">{chip}</span>
@@ -126,17 +159,17 @@ export default function Shop() {
             <div className="price-inputs">
               <select className="price-select" value={minPrice} onChange={(e) => setMinPrice(Number(e.target.value))}>
                 <option value={0}>Min</option>
-                <option value={500}>₹500</option>
-                <option value={1000}>₹1000</option>
-                <option value={2000}>₹2000</option>
-                <option value={5000}>₹5000</option>
+                <option value={500}>{formatINR(500)}</option>
+                <option value={1000}>{formatINR(1000)}</option>
+                <option value={2000}>{formatINR(2000)}</option>
+                <option value={5000}>{formatINR(5000)}</option>
               </select>
               <span>to</span>
               <select className="price-select" value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))}>
-                <option value={1000}>₹1000</option>
-                <option value={2000}>₹2000</option>
-                <option value={5000}>₹5000</option>
-                <option value={10000}>₹10000</option>
+                <option value={1000}>{formatINR(1000)}</option>
+                <option value={2000}>{formatINR(2000)}</option>
+                <option value={5000}>{formatINR(5000)}</option>
+                <option value={10000}>{formatINR(10000)}</option>
                 <option value={100000}>10000+</option>
               </select>
             </div>
@@ -186,7 +219,7 @@ export default function Shop() {
           
           <div className="shop-topbar card">
             <div className="product-count">
-              <h2>{categoryParam === 'All' ? 'All Products' : categoryParam}</h2>
+              <h2>{keyword ? 'Search results for “' + keyword + '”' : categoryParam === 'All' ? 'All Products' : categoryParam}</h2>
               <span className="count-text">(Showing 1 – {filteredProducts.length} products)</span>
             </div>
             

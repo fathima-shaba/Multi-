@@ -210,3 +210,9 @@ input, textarea, select {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8; 
 }
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #1554b6;
+  outline-offset: 2px;
+}
+.top-navbar :focus-visible { outline-color: #fff; }

@@ -1,6 +1,6 @@
 .admin-layout {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 250px minmax(0, 1fr);
   min-height: calc(100vh - 73px);
 }
 
@@ -43,8 +43,68 @@
 }
 
 .admin-main {
+  min-width: 0;
   padding: 3rem;
   background-color: var(--bg-color);
+}
+
+.admin-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .75rem;
+  margin: .75rem 0;
+}
+
+.admin-heading {
+  justify-content: space-between;
+}
+
+.admin-controls label,
+.admin-editor label {
+  display: grid;
+  gap: .25rem;
+}
+
+.admin-editor {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1rem;
+}
+
+.admin-editor .admin-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.admin-dialog {
+  padding: 1.5rem;
+  margin: auto;
+  width: min(600px, calc(100% - 2rem));
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.admin-dialog::backdrop {
+  background: rgb(0 0 0 / 50%);
+}
+
+.admin-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.admin-product-name {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.admin-product-name img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
 /* Dashboard Stats */
@@ -145,3 +205,31 @@
     border-bottom: 1px solid var(--border-color);
   }
 }
+
+@media (max-width: 600px) {
+  .admin-main {
+    padding: 1rem;
+  }
+
+  .admin-controls label {
+    width: 100%;
+  }
+}
+
+.admin-dashboard > p { margin-bottom: 1.25rem; }
+.business-stat-grid, .business-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+.business-stat-grid { grid-template-columns: repeat(auto-fit, minmax(min(205px, 100%), 1fr)); }
+.business-grid { grid-template-columns: repeat(auto-fit, minmax(min(335px, 100%), 1fr)); }
+.business-stat-grid .stat-icon { flex-shrink: 0; }
+.business-stat-grid .stat-card h3 { font-size: .9rem; }
+.business-stat-grid .stat-value { overflow-wrap: anywhere; }
+.business-chart { padding: 1rem; min-width: 0; }
+.business-chart h2 { font-size: 1.05rem; margin-bottom: .75rem; }
+.business-chart-size { height: 260px; min-width: 0; }
+.business-recent { list-style: none; padding: 0; }
+.business-recent li { padding: .6rem 0; border-bottom: 1px solid var(--border-color, #e5e7eb); }
+.business-recent small { display: block; }

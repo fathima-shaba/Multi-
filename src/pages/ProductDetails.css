@@ -475,3 +475,20 @@
     font-weight: 500;
   }
 }
+.product-thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: .75rem 0;
+}
+
+.product-thumbnails img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+}
+
+.stock-status {
+  margin: .5rem 0;
+  font-weight: 600;
+}
